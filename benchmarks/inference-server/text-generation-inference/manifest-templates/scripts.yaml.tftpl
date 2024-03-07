@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scripts
+  namespace: ${namespace}
+data:
+  serve.sh: |
+    #!/bin/sh
+    #
+    # A script to serve a synthetic metric via netcat (nc).
+
+    # Install dependencies
+    apt update && apt install ncat curl bc -y
+    if [ $? != 0 ] ; then
+      echo "ERROR: Unable to install dependencies. Exiting..."
+      exit 1
+    fi
+
+    # Serve requests
+    while true; do
+      nc -l -p 8080 -c 'echo "HTTP/1.1 200 OK\n\n$(/mnt/metric.sh)"'
+    done
+
+  metric.sh: |
+    #!/bin/sh
+    #
+    # A script to fetch metrics from the main container and create a synthetic one
+    curl -s --http0.9 http://localhost:80/metrics > result1.txt
+    sum=$(cat result1.txt | grep tgi_request_mean_time_per_token_duration_sum | cut -d\  -f2)
+    count=$(cat result1.txt | grep tgi_request_mean_time_per_token_duration_count | cut -d\  -f2)
+    result=$(echo "scale=10; $sum / $count" | bc)
+    echo "# TYPE hack_hack_hack gauge"
+    echo "hack_hack_hack $result"
+    rm result1.txt

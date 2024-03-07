@@ -21,6 +21,7 @@ locals {
   hpa_cpu_template           = "${path.module}/hpa-templates/hpa.cpu.yaml.tftpl"
   hpa_custom_metric_template = "${path.module}/hpa-templates/hpa.tgi.custom_metric.yaml.tftpl"
   tgi_podmonitoring          = "${path.module}/hpa-templates/tgi-podmonitoring.yaml.tftpl"
+  tgi_podmonitoring_hack     = "${path.module}/hpa-templates/tgi-podmonitoring-hack.yaml.tftpl"
   custom_metrics_enabled     = !(var.hpa_type == null || var.hpa_type == "cpu")
 
   wl_templates = [
@@ -86,6 +87,13 @@ resource "kubernetes_manifest" "hpa-cpu" {
 resource "kubernetes_manifest" "tgi-pod-monitoring" {
   count = local.custom_metrics_enabled ? 1 : 0
   manifest = yamldecode(templatefile(local.tgi_podmonitoring, {
+    namespace = var.namespace
+  }))
+}
+
+resource "kubernetes_manifest" "tgi-pod-monitoring-hack" {
+  count = local.custom_metrics_enabled ? 1 : 0
+  manifest = yamldecode(templatefile(local.tgi_podmonitoring_hack, {
     namespace = var.namespace
   }))
 }

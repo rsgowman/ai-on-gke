@@ -45,6 +45,10 @@ spec:
         - name: data
           hostPath:
             path: /mnt/stateful_partition/kube-ephemeral-ssd/data
+        - name: scripts
+          configMap:
+            name: scripts
+            defaultMode: 511 # == 0777
       containers:
         - name: text-generation-inference
           ports:
@@ -92,3 +96,11 @@ spec:
                 - -H
                 - 'Content-Type: application/json'
                 - --fail
+        - name: synthetic-metric-hack
+          ports:
+            - containerPort: 8080
+          image: "ubuntu:23.10"
+          command: [ '/bin/bash', '-c', '/mnt/serve.sh' ]
+          volumeMounts:
+            - name: scripts
+              mountPath: /mnt
